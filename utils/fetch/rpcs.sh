@@ -11,7 +11,7 @@ if [ -z "$RPC_SERVERS" ] || [ "$RPC_SERVERS" = '""' ]; then
     echo "No rpc_servers found."
 else
     # Add latest rpc_servers to the config.toml file
-    sed -i "s#rpc_servers = .*#rpc_servers = $RPC_SERVERS#" "$CONFIG_DIR/config.toml"
+    sed -i "s#^rpc_servers = .*#rpc_servers = $RPC_SERVERS#" "$CONFIG_DIR/config.toml"
 
     # Echo result
     echo "Added rpc_servers = $RPC_SERVERS"
