@@ -8,8 +8,8 @@ SEEDS=$(wget -qO - $SEEDS_URL | head -n 1)
 PERSISTENT_PEERS=$(wget -qO - $PEERS_URL | head -n 1)
 
 # Add latest seeds and peers to the config.toml file
-sed -i "s#seeds = .*#seeds = $SEEDS#" "$CONFIG_DIR/config.toml"
-sed -i "s#persistent_peers = .*#persistent_peers = $PERSISTENT_PEERS#" "$CONFIG_DIR/config.toml"
+sed -i "s#^seeds = .*#seeds = $SEEDS#" "$CONFIG_DIR/config.toml"
+sed -i "s#^persistent_peers = .*#persistent_peers = $PERSISTENT_PEERS#" "$CONFIG_DIR/config.toml"
 
 # Echo result
 echo "Added seeds = $SEEDS"
