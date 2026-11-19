@@ -11,17 +11,27 @@ set -Eeuo pipefail
 #     and restart systemd service.
 #
 # Default target:
-#   v1.1.1 at height 13,000,000
+#   v1.6.2.1 (return of the untouched airdrop to the community pool). Its
+#   height comes from the passed upgrade proposal and its commit from the
+#   release, so both must be given:
+#
+#     UPGRADE_HEIGHT=<height> EXPECTED_COMMIT=<commit> \
+#       bash setup/genesis-staged-upgrade.sh
+#
+#   See upgrades/v1.6.2.1/VALIDATOR_GUIDE.md. Not for nodes run by
+#   cosmovisor: those get the binary in cosmovisor/upgrades/v1.6.2.1/bin.
 ###############################################################################
 
 REPO_URL="${REPO_URL:-https://github.com/GenesisL1/genesis-crypto.git}"
 
-UPGRADE_NAME="${UPGRADE_NAME:-v1.1.1}"
-UPGRADE_REF="${UPGRADE_REF:-v1.1.1}"
-UPGRADE_HEIGHT="${UPGRADE_HEIGHT:-13000000}"
+UPGRADE_NAME="${UPGRADE_NAME:-v1.6.2.1}"
+UPGRADE_REF="${UPGRADE_REF:-v1.6.2.1}"
+# Required: the height in the passed upgrade proposal.
+UPGRADE_HEIGHT="${UPGRADE_HEIGHT:-}"
 
-# Pin this for safety. Override for future upgrades.
-EXPECTED_COMMIT="${EXPECTED_COMMIT:-bab909493ad4f56828b5ee30c21c97219fbb93c1}"
+# Pin this for safety: the commit published with the release. Required; set it
+# to an empty string only if you deliberately want to skip the check.
+EXPECTED_COMMIT="${EXPECTED_COMMIT-REQUIRED}"
 
 BINARY="${BINARY:-genesisd}"
 SERVICE="${SERVICE:-genesisd}"
@@ -40,7 +50,10 @@ RPC_FAILS_AFTER_HEIGHT="${RPC_FAILS_AFTER_HEIGHT:-3}"
 NETWORK="${NETWORK:-mainnet}"
 LEDGER_ENABLED="${LEDGER_ENABLED:-true}"
 
-RUN_CONFIG_MIGRATION="${RUN_CONFIG_MIGRATION:-1}"
+# v1.6.2.1 changes no configuration, so the migration is off by default.
+RUN_CONFIG_MIGRATION="${RUN_CONFIG_MIGRATION:-0}"
+# Remove the temporary blocked-addresses list from app.toml after the halt.
+LIFT_AIRDROP_BLOCK="${LIFT_AIRDROP_BLOCK:-1}"
 START_AFTER_INSTALL="${START_AFTER_INSTALL:-1}"
 
 # Manual override. Use only if you have verified the node halted correctly.
@@ -108,8 +121,12 @@ service_is_active() {
 }
 
 recent_logs_show_upgrade() {
+  # The exact halt message of the upgrade module. It means the old binary
+  # refused block UPGRADE_HEIGHT, so the block before it is fully committed.
+  # (The RPC height alone can show that block while it is still being applied.)
   "${SUDO[@]}" journalctl -u "$SERVICE" -n 300 --no-pager 2>/dev/null \
-    | grep -Eiq "upgrade|UPGRADE|${UPGRADE_NAME}"
+    | grep -Fq -e "UPGRADE \"${UPGRADE_NAME}\" NEEDED at height: ${UPGRADE_HEIGHT}:" \
+               -e "UPGRADE \\\"${UPGRADE_NAME}\\\" NEEDED at height: ${UPGRADE_HEIGHT}:"   # plain or JSON logs
 }
 
 detect_active_binary_path() {
@@ -261,7 +278,7 @@ wait_for_upgrade_halt() {
       fi
 
       if recent_logs_show_upgrade; then
-        log "Recent service logs mention upgrade/halt; proceeding"
+        log "Service logs show the upgrade halt (UPGRADE \"$UPGRADE_NAME\" NEEDED); proceeding"
         return 0
       fi
 
@@ -339,6 +356,29 @@ run_config_migration() {
   bash "$migrate_script" "$config_toml" "$app_toml"
 }
 
+refuse_cosmovisor() {
+  local exec_start
+  exec_start="$("${SUDO[@]}" systemctl show "$SERVICE" -p ExecStart --value 2>/dev/null || true)"
+  if grep -qi cosmovisor <<<"$exec_start"; then
+    die "$SERVICE runs under cosmovisor; this script would replace the wrong binary.
+Put the new binary at \$DAEMON_HOME/cosmovisor/upgrades/$UPGRADE_NAME/bin/$BINARY instead
+(see upgrades/$UPGRADE_NAME/VALIDATOR_GUIDE.md)."
+  fi
+}
+
+lift_airdrop_block() {
+  if [[ "$LIFT_AIRDROP_BLOCK" != "1" ]]; then
+    log "Leaving blocked-addresses in app.toml because LIFT_AIRDROP_BLOCK=$LIFT_AIRDROP_BLOCK"
+    return 0
+  fi
+
+  local lift_script="$SRC_DIR/setup/lift-airdrop-block.sh"
+  [[ -f "$lift_script" ]] || die "Lift script not found: $lift_script"
+
+  log "Lifting the temporary airdrop block from app.toml"
+  bash "$lift_script" "$NODE_HOME/config/app.toml"
+}
+
 install_staged_binary() {
   local active_bin="$1"
   local tmp_bin
@@ -400,6 +440,12 @@ main() {
   log "RPC URL:        $RPC_URL"
   log "Service:        $SERVICE"
 
+  [[ -n "$UPGRADE_HEIGHT" ]] && is_number "$UPGRADE_HEIGHT" \
+    || die "Set UPGRADE_HEIGHT to the height in the passed $UPGRADE_NAME upgrade proposal"
+  [[ "$EXPECTED_COMMIT" != "REQUIRED" ]] \
+    || die "Set EXPECTED_COMMIT to the commit published with the $UPGRADE_NAME release"
+  refuse_cosmovisor
+
   prepare_source_and_build
   wait_for_upgrade_halt
 
@@ -412,6 +458,7 @@ main() {
   stop_service_cleanly
   backup_critical_files "$active_bin"
   run_config_migration
+  lift_airdrop_block
   install_staged_binary "$active_bin"
   start_service
 

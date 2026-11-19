@@ -44,11 +44,27 @@ cd $REPO_ROOT
 # Backup important files in the node directory
 rsync -av --include='data/priv_validator_state.json' --exclude='data/*' "$NODE_DIR/" "$NODE_DIR-backup/"
 
-# Migrate configs
-sh ./setup/migrate-configs.sh "$CONFIG_DIR/config.toml" "$CONFIG_DIR/app.toml"
+# Migrate configs. v1.6.2.1 changes no configuration, and running the v1.6.2
+# migration again would reset settings such as versiondb and telemetry, so it is
+# off unless asked for.
+if [ "${RUN_CONFIG_MIGRATION:-0}" = "1" ]; then
+    sh ./setup/migrate-configs.sh "$CONFIG_DIR/config.toml" "$CONFIG_DIR/app.toml"
+else
+    echo "v1.6.2.1 needs no config migration: skipped (set RUN_CONFIG_MIGRATION=1 to run it anyway)."
+fi
 
-# Install binaries
-go mod tidy
+# v1.6.2.1: the temporary airdrop block ends with this upgrade.
+if grep -qE '^[[:space:]]*blocked-addresses[[:space:]]*=' "$CONFIG_DIR/app.toml" 2>/dev/null; then
+    printf "Remove the temporary airdrop blocked-addresses list from app.toml now? (Y/n): "
+    read LIFT
+    LIFT=$(echo "$LIFT" | tr 'A-Z' 'a-z')
+    if [ "$LIFT" != "n" ]; then
+        bash ./setup/lift-airdrop-block.sh "$CONFIG_DIR/app.toml"
+    fi
+fi
+
+# Install binaries. Build exactly from the release's go.mod and go.sum (make
+# uses -mod=readonly): every validator must run the same code.
 make install && {
     echo ""
     echo "Upgrade was a success!"

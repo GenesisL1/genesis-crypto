@@ -156,7 +156,10 @@ Upgrading your node happens in phases. Your node will auto-halt whenever it is a
 |-------------|----------------------------|------------------------|
 | plan_crypto | 7,400,000 (legacy node)    | v1.0.0                |
 | v1.1.1      | 13,000,000                 | v1.1.1                |
-| v1.6.2      | TBD                        | v1.6.2                |
+| v1.6.2      | 13,093,000                 | v1.6.2                |
+| v1.6.2.1    | 14,122,000                 | v1.6.2.1              |
+
+For v1.6.2.1 (return of the untouched airdrop to the community pool), follow [upgrades/v1.6.2.1/VALIDATOR_GUIDE.md](upgrades/v1.6.2.1/VALIDATOR_GUIDE.md): it also covers cosmovisor and the staged script, and the lifting of the temporary `blocked-addresses` list after the upgrade.
 
 You're only required to use the upgrade.sh script every time an upgrade is needed, but make sure the following conditions match:
 - node auto-halted (!) at a specific plan/height
