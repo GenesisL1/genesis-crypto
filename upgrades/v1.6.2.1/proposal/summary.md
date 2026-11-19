@@ -4,7 +4,7 @@ This software upgrade carries out signal proposal #{{SIGNAL_ID}}. At block {{HEI
 
 A dry run of the upgrade code on mainnet state at block {{DRYRUN_HEIGHT}} moves {{DRYRUN_L1}} L1 from {{DRYRUN_ACCOUNTS}} accounts. The final figures are set at block {{HEIGHT}} and published in the upgrade's airdrop_recovery event.
 
-A YES vote schedules the upgrade at block {{HEIGHT}}, expected around {{UPGRADE_TIME_UTC}} UTC. Validators must install genesisd v1.6.2.1 before then.
+A YES vote schedules the upgrade at block {{HEIGHT}}, expected around {{UPGRADE_TIME_UTC}} UTC. Validators must switch to genesisd v1.6.2.1 once their nodes halt at the upgrade height.
 
 ## What the upgrade does
 
