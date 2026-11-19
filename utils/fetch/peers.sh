@@ -1,16 +1,38 @@
 #!/bin/bash
 
+set -eu
+
 # Source the _variables.sh file
 . "$(cd "$(dirname "$0")"/.. && pwd)/_variables.sh"
 
-# Fetch latest seeds and peers
-SEEDS=$(wget -qO - $SEEDS_URL | head -n 1)
-PERSISTENT_PEERS=$(wget -qO - $PEERS_URL | head -n 1)
+# Function to fetch and update config values
+update_config() {
+    URL="$1"
+    KEY="$2"
+    NAME="$3"
 
-# Add latest seeds and peers to the config.toml file
-sed -i "s#seeds = .*#seeds = $SEEDS#" "$CONFIG_DIR/config.toml"
-sed -i "s#persistent_peers = .*#persistent_peers = $PERSISTENT_PEERS#" "$CONFIG_DIR/config.toml"
+    # Fetch latest value
+    if VALUE=$(wget -qO - "$URL"); then
 
-# Echo result
-echo "Added seeds = $SEEDS"
-echo "Added persistent_peers = $PERSISTENT_PEERS"
+        # Grab only the first line
+        VALUE=$(printf '%s\n' "$VALUE" | head -n 1)
+
+        if [ -z "$VALUE" ] || [ "$VALUE" = '""' ]; then
+            echo "No $NAME found. Skipping."
+        else
+            # Ensure value is enclosed in double quotes
+            if ! printf '%s\n' "$VALUE" | grep -q '^".*"$'; then VALUE="\"$VALUE\""; fi
+
+            # Update config.toml
+            sed -i "s#^$KEY *=.*#$KEY = $VALUE#" "$CONFIG_DIR/config.toml"
+            echo "Added $KEY = $VALUE"
+        fi
+
+    else
+        echo "Failed to fetch $NAME. Skipping."
+    fi
+}
+
+# Update seeds and persistent peers
+update_config "$SEEDS_URL" "seeds" "seeds"
+update_config "$PEERS_URL" "persistent_peers" "persistent peers"
