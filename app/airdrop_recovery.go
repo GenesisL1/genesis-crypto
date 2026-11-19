@@ -103,19 +103,19 @@ type AirdropEntry struct {
 type AirdropRecoveryOutcome uint8
 
 const (
-	// AirdropRecovered: the account qualified and its el1 balance moved to the
+	// AirdropRecovered the account qualified and its el1 balance moved to the
 	// community pool.
 	AirdropRecovered AirdropRecoveryOutcome = iota + 1
-	// AirdropSkippedNoAccount: no account exists at the address.
+	// AirdropSkippedNoAccount no account exists at the address.
 	AirdropSkippedNoAccount
-	// AirdropSkippedSigned: the account has signed a transaction (sequence > 0
+	// AirdropSkippedSigned the account has signed a transaction (sequence > 0
 	// or a public key on chain).
 	AirdropSkippedSigned
-	// AirdropSkippedNotPlain: a module, vesting or contract account.
+	// AirdropSkippedNotPlain a module, vesting or contract account.
 	AirdropSkippedNotPlain
-	// AirdropSkippedBelowAirdrop: the el1 balance is below the airdrop amount.
+	// AirdropSkippedBelowAirdrop the el1 balance is below the airdrop amount.
 	AirdropSkippedBelowAirdrop
-	// AirdropSkippedExtraBalance: the el1 balance is 1 L1 or more above the
+	// AirdropSkippedExtraBalance the el1 balance is 1 L1 or more above the
 	// airdrop amount, so someone else sent L1 to the account.
 	AirdropSkippedExtraBalance
 )
