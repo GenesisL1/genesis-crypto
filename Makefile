@@ -103,14 +103,46 @@ ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
 endif
 
+###############################################################################
+###                           Go toolchain check                            ###
+###############################################################################
+
+# Supported Go: 1.23.12 (the go.mod minimum) to 1.25.x. The official release
+# binaries use go1.23.12 (nix/build_overlay.nix).
+# - Go 1.26 and later cannot compile this release: bytedance/sonic v1.14.0, which
+#   cosmossdk.io/log imports, supports Go up to 1.25.
+# - Go 1.27 and later would also change consensus results: they ship Unicode 17.0.0
+#   tables instead of 15.0.0 and an encoding/json built on encoding/json/v2.
+# genesisd refuses to run when built with other Unicode tables or with
+# GOEXPERIMENT=jsonv2 (app/toolchain_guard.go). This check only stops a build
+# early, with a clear message, before the compiler fails or a refused binary is
+# made. It reads `go env GOVERSION`, which also honours GOTOOLCHAIN. Raise
+# GO_MAX_MINOR only after the dependencies build and test with the newer Go, and
+# go to 1.27 or later only in a coordinated upgrade.
+GO_MAX_MINOR := 25
+GO_SUGGESTED := go1.23.12
+
+check-go-version:
+	@v="$$(go env GOVERSION 2>/dev/null)"; \
+	minor="$$(printf '%s\n' "$$v" | sed -n -E 's/^go1\.([0-9]+)([^0-9].*)?$$/\1/p')"; \
+	if [ -z "$$minor" ] || [ "$$minor" -gt $(GO_MAX_MINOR) ]; then \
+		echo "ERROR: genesisd must be built with Go 1.23.12 to 1.$(GO_MAX_MINOR).x, not $${v:-(no go found in PATH)}." >&2; \
+		echo "  Go 1.26 and later cannot compile this release, and Go 1.27 and later would also" >&2; \
+		echo "  compute a different state from the rest of the network (other Unicode tables)." >&2; \
+		echo "  Install Go 1.23.12 to 1.$(GO_MAX_MINOR).x, or keep your Go and run:" >&2; \
+		echo "    GOTOOLCHAIN=$(GO_SUGGESTED) make $(or $(MAKECMDGOALS),build)" >&2; \
+		exit 1; \
+	fi; \
+	echo "--> Go toolchain: $$v"
+
 all: build
-build: check-network print-ledger go.sum
+build: check-go-version check-network print-ledger go.sum
 	@go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/$(BINARY_NAME) ./cmd/cronosd
 
-install: check-network print-ledger go.sum
+install: check-go-version check-network print-ledger go.sum
 	@go build -mod=readonly $(BUILD_FLAGS)  -o $${GOBIN:-$$(go env GOPATH)/bin}/$(BINARY_NAME) ./cmd/cronosd
 
-test: test-memiavl test-store
+test: check-go-version test-memiavl test-store
 	@go test -tags=objstore -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 
 test-memiavl:
@@ -122,7 +154,7 @@ test-store:
 test-versiondb:
 	@cd versiondb; go test -tags=objstore,rocksdb -v -mod=readonly ./... -coverprofile=$(COVERAGE) -covermode=atomic;
 
-.PHONY: clean build install test test-memiavl test-store test-versiondb
+.PHONY: check-go-version clean build install test test-memiavl test-store test-versiondb
 
 clean:
 	rm -rf $(BUILDDIR)/
