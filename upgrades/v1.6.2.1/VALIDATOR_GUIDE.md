@@ -6,15 +6,33 @@ Upgrade v1.6.2.1 returns the untouched 2022 ATOM and Evmos airdrop allocations t
 |---|---|
 | Plan name | `v1.6.2.1` |
 | Upgrade height | `14122000` (proposal #`139`), expected around `2026-11-29 14:00 (UTC)` |
-| Release | tag `v1.6.2.1`, commit `3acbcbe36fbe02508ab9e190b9547a603653c1f1` |
+| Release | tag `v1.6.2.1`, commit `<RELEASE_COMMIT>` |
+| Go | `1.23.12` to `1.25.x` (the release binaries use `go1.23.12`); `1.26` and later cannot build it |
 | Chain id | `genesis_29-2` |
 | Runs on top of | `v1.6.2` (upgrade at height 13,093,000, proposal #121) |
 
 Three rules matter more than anything else:
 
 1. **Do not run the new binary before the upgrade height.** It refuses to process earlier blocks, and the old binary refuses to process the upgrade block.
-2. **Build from the published commit only.** Every validator must run the same code, or the chain stops on an app-hash mismatch.
+2. **Build from the published commit only, with Go 1.23.12 to 1.25.x.** Every validator must run the same code, or the chain stops on an app-hash mismatch. The Go version counts too: Go 1.26 and later cannot build this release, and Go 1.27 and later have different Unicode tables, which change what some transactions do. `make` stops on them, and `genesisd` refuses to run if it was built with other Unicode tables.
 3. **Lift the temporary airdrop block after the upgrade.** The scripts below do it; with cosmovisor you do it yourself (step 5).
+
+## 0. Check the binary you run today
+
+The v1.6.2 binary has no Go check of its own. See which Go built the one you run:
+
+```bash
+genesisd version --long | grep '^go:'      # expected: go1.23 to go1.25
+```
+
+The official v1.6.2 and v1.6.2.1 binaries were built with `go1.23.12`, and the v1.6.2 sources do not compile with Go 1.26 or later. If yours shows anything outside go1.23 to go1.25, it was not built from the release sources: rebuild v1.6.2 now, before the upgrade, and restart:
+
+```bash
+cd ~/genesis-crypto && git fetch --tags && git checkout v1.6.2
+GOTOOLCHAIN=go1.23.12 make install   # Go fetches go1.23.12 for this build only
+genesisd version --long | grep '^go:'      # go version go1.23.12 ...
+sudo systemctl restart genesisd
+```
 
 ## 1. Build and check the binary (any time before the upgrade)
 
@@ -22,11 +40,16 @@ Three rules matter more than anything else:
 cd ~/genesis-crypto            # or a fresh clone of https://github.com/GenesisL1/genesis-crypto
 git fetch --tags
 git checkout v1.6.2.1
-git rev-parse HEAD             # must print 3acbcbe36fbe02508ab9e190b9547a603653c1f1
+git rev-parse HEAD             # must print <RELEASE_COMMIT>
+go version                     # must be go1.23.12 to go1.25.x (see below otherwise)
 make build                     # writes ./build/genesisd
-./build/genesisd version --long | grep -E '^(version|commit):'
+./build/genesisd version --long | grep -E '^(version|commit|go):'
 ./build/genesisd airdrop-recovery verify-list
 ```
+
+`version --long` must show version `1.6.2.1`, the commit above and `go version go1.23.12` to `go1.25.x`. Do not set `GOEXPERIMENT` when you build: `genesisd` also refuses `GOEXPERIMENT=jsonv2`.
+
+If `go version` shows `go1.26` or later, `make build` stops with `ERROR: genesisd must be built with Go 1.23.12 to 1.25.x`. Keep your Go and build with `GOTOOLCHAIN=go1.23.12 make build`: Go downloads go1.23.12 and uses it for this build only. A binary built some other way with other Unicode tables prints `genesisd will not run` and exits instead of starting.
 
 `verify-list` must print exactly:
 
@@ -75,15 +98,15 @@ cp ./build/genesisd ~/.genesis/cosmovisor/upgrades/v1.6.2.1/bin/genesisd
 ~/.genesis/cosmovisor/upgrades/v1.6.2.1/bin/genesisd airdrop-recovery verify-list
 ```
 
-Cosmovisor switches binaries at the halt by itself. Do not use B or C on a cosmovisor node.
+Cosmovisor switches binaries at the halt by itself. Do not use B or C on a cosmovisor node. If cosmovisor downloads the binary for you instead, it takes the release build, which was made with `go1.23.12`.
 
 ### B. Staged script (systemd, no cosmovisor)
 
-It builds the release while your node keeps running, waits for the halt, backs up your config, `priv_validator_state.json` and keyrings, lifts the airdrop block, installs the new binary and starts the service. Run it in `tmux` or `screen` so that it survives your SSH session:
+It builds the release while your node keeps running, waits for the halt, backs up your config, `priv_validator_state.json` and keyrings, lifts the airdrop block, installs the new binary and starts the service. It stops at the build step, long before the halt, if your Go is 1.26 or later, or if the binary it built would refuse to run; run it again with `GOTOOLCHAIN=go1.23.12` in front. Run it in `tmux` or `screen` so that it survives your SSH session:
 
 ```bash
 cd ~/genesis-crypto && git fetch --tags && git checkout v1.6.2.1
-UPGRADE_HEIGHT=14122000 EXPECTED_COMMIT=3acbcbe36fbe02508ab9e190b9547a603653c1f1 bash setup/genesis-staged-upgrade.sh
+UPGRADE_HEIGHT=14122000 EXPECTED_COMMIT=<RELEASE_COMMIT> bash setup/genesis-staged-upgrade.sh
 ```
 
 ### C. By hand after the halt
@@ -105,7 +128,7 @@ Before the upgrade height keep a copy of `~/.genesis/config/` and `~/.genesis/da
 The old binary stops processing blocks with:
 
 ```
-ERR UPGRADE "v1.6.2.1" NEEDED at height: 14122000: {"tag":"v1.6.2.1","commit":"3acbcbe36fbe02508ab9e190b9547a603653c1f1",...}
+ERR UPGRADE "v1.6.2.1" NEEDED at height: 14122000: {"tag":"v1.6.2.1","commit":"<RELEASE_COMMIT>",...}
 ERR CONSENSUS FAILURE!!! err="failed to apply block; error UPGRADE \"v1.6.2.1\" NEEDED at height: 14122000: ..."
 ```
 

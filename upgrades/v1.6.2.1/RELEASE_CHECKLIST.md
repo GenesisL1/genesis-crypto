@@ -8,7 +8,7 @@ For whoever releases the upgrade and submits the proposal. Validators follow [VA
 
 ## 2. Review and merge
 
-- [ ] Review the change set against `v1.6.2` (`git diff v1.6.2...`). [REVIEW.md](REVIEW.md) explains each change. Code: `app/airdrop_recovery.go`, `app/upgrades.go`, `app/migration_data/untouched.csv.gz`, `cmd/cronosd/cmd/airdrop_recovery.go`, one line in `cmd/cronosd/cmd/root.go` and the version in `default.nix`. The rest is tests, scripts and documents.
+- [ ] Review the change set against `v1.6.2` (`git diff v1.6.2...`). [REVIEW.md](REVIEW.md) explains each change. Code: `app/airdrop_recovery.go`, `app/upgrades.go`, `app/migration_data/untouched.csv.gz`, `cmd/cronosd/cmd/airdrop_recovery.go`, one line in `cmd/cronosd/cmd/root.go` and the version in `default.nix`; and the Go guard: `app/toolchain_guard.go`, a check at the top of `app.New` and of `cmd/cronosd/main.go`, and `check-go-version` in the `Makefile` (see [REVIEW.md](REVIEW.md#unicode-tables-build-with-go-12312-to-125x)). The rest is tests, scripts and documents.
 - [ ] Check that the embedded list is the published one:
       `sha256sum app/migration_data/untouched.csv.gz` → `1297cfe6dceed738d7fc34b6412826b9f3f249461bfcc1418fecff32c2e8321b`, the digest in the published repository's `SHA256SUMS`.
 - [ ] On a clean checkout, all of these pass:
@@ -16,6 +16,15 @@ For whoever releases the upgrade and submits the proposal. Validators follow [VA
       go vet ./app/ ./cmd/cronosd/...
       go test ./app/... ./cmd/...
       make build && ./build/genesisd airdrop-recovery verify-list
+
+- [ ] The Go checks work:
+
+      GOTOOLCHAIN=go1.26.11 make build     # stops at check-go-version, as does 1.27+ (Go downloads 1.26.11 for this)
+      go test -count=1 -v -run 'TestToolchain|TestUnicode|TestBuildSetting' ./app/   # passes on the release toolchain
+
+      With today's dependencies, Go 1.26 and later do not compile genesisd and `GOEXPERIMENT=jsonv2` does not link
+      (bytedance/sonic), so a refused binary cannot be built from this tree; REVIEW.md shows the refusals with the guard
+      built alone.
 
 - [ ] Rehearsal with the real binaries. Build `v1.6.2` into one directory and this branch into another, then:
 
@@ -29,7 +38,7 @@ For whoever releases the upgrade and submits the proposal. Validators follow [VA
 
 - [ ] Tag the merged commit: `git tag -s v1.6.2.1 -m "v1.6.2.1"` (or `-a` without a signing key) and push the tag. Record the full commit: `git rev-parse v1.6.2.1^{commit}`.
 - [ ] `make build` on the tag: `genesisd version --long` shows version `1.6.2.1` and that commit.
-- [ ] Optional: attach Linux binaries to a GitHub release, as for v1.6.2 (`genesis_1.6.2_Linux_x86_64.tar.gz` and so on), with their SHA-256 sums. Have a second person build the same tag and compare the `airdrop-recovery verify-list` output and `version --long` before publishing.
+- [ ] Optional: attach Linux binaries to a GitHub release, as for v1.6.2 (`genesis_1.6.2_Linux_x86_64.tar.gz` and so on), with their SHA-256 sums. Build them with go1.23.12, as the nix release build does, and check before publishing: `go version -m bin/genesisd` must print `go1.23.12`. Cosmovisor nodes that download binaries take these, so they set the toolchain for part of the network. Have a second person build the same tag and compare the `airdrop-recovery verify-list` output and `version --long` before publishing.
 
 ## 4. Dry run on mainnet state
 
