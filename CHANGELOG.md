@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.6.2.1 (GenesisL1)
+
+Upgrade plan `v1.6.2.1`, on top of v1.6.2. See [upgrades/v1.6.2.1](upgrades/v1.6.2.1/README.md).
+
+* Return the untouched 2022 ATOM and Evmos airdrop allocations to the community pool at the upgrade height. The
+  published list (`untouched.csv.gz`, sha256 `1297cfe6…8321b`, 579,281 accounts) is compiled in and checked. An
+  account is recovered only if it never signed, is a plain account and holds at least its airdrop and less than 1 L1
+  above it; one `airdrop_recovery` event reports the totals.
+* New `genesisd airdrop-recovery verify-list` and `genesisd airdrop-recovery simulate` commands.
+* The upgrade keeps the default store loader (`MaxVersionStoreLoader`), which nodes running versiondb rely on.
+* Setup: `setup/lift-airdrop-block.sh` removes the temporary `blocked-addresses` list from `app.toml`;
+  `setup/genesis-staged-upgrade.sh` and `setup/upgrade.sh` target v1.6.2.1 and lift the list after the halt.
+
 ## UNRELEASED
 
 ### Improvements

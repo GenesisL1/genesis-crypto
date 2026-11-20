@@ -192,6 +192,7 @@ func initRootCmd(
 		txCommand(),
 		ethermintclient.KeyCommands(app.DefaultNodeHome),
 		e2eecli.E2EECommand(),
+		AirdropRecoveryCmd(),
 	)
 
 	rootCmd, err := srvflags.AddGlobalFlags(rootCmd)
