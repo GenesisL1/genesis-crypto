@@ -6,7 +6,7 @@ Upgrade v1.6.2.1 returns the untouched 2022 ATOM and Evmos airdrop allocations t
 |---|---|
 | Plan name | `v1.6.2.1` |
 | Upgrade height | `14122000` (proposal #`139`), expected around `2026-11-29 14:00 (UTC)` |
-| Release | tag `v1.6.2.1`, commit `<RELEASE_COMMIT>` |
+| Release | tag `v1.6.2.1`, commit `3acbcbe36fbe02508ab9e190b9547a603653c1f1` |
 | Chain id | `genesis_29-2` |
 | Runs on top of | `v1.6.2` (upgrade at height 13,093,000, proposal #121) |
 
@@ -22,7 +22,7 @@ Three rules matter more than anything else:
 cd ~/genesis-crypto            # or a fresh clone of https://github.com/GenesisL1/genesis-crypto
 git fetch --tags
 git checkout v1.6.2.1
-git rev-parse HEAD             # must print <RELEASE_COMMIT>
+git rev-parse HEAD             # must print 3acbcbe36fbe02508ab9e190b9547a603653c1f1
 make build                     # writes ./build/genesisd
 ./build/genesisd version --long | grep -E '^(version|commit):'
 ./build/genesisd airdrop-recovery verify-list
@@ -42,8 +42,8 @@ That digest is the one published in [GenesisL1/genesisl1-untouched-airdrop](http
 
 ```bash
 # On a copy (a minute of downtime): stop, copy, restart
-sudo systemctl stop genesisd && cp -a ~/.genesis /data/genesis-copy && sudo systemctl start genesisd
-./build/genesisd airdrop-recovery simulate --home /data/genesis-copy --accounts-out accounts.csv > report.json
+sudo systemctl stop genesisd && cp -a ~/.genesis ~/genesis-copy && sudo systemctl start genesisd
+./build/genesisd airdrop-recovery simulate --home ~/genesis-copy --accounts-out accounts.csv > report.json
 cat report.json
 ```
 
@@ -83,7 +83,7 @@ It builds the release while your node keeps running, waits for the halt, backs u
 
 ```bash
 cd ~/genesis-crypto && git fetch --tags && git checkout v1.6.2.1
-UPGRADE_HEIGHT=14122000 EXPECTED_COMMIT=<RELEASE_COMMIT> bash setup/genesis-staged-upgrade.sh
+UPGRADE_HEIGHT=14122000 EXPECTED_COMMIT=3acbcbe36fbe02508ab9e190b9547a603653c1f1 bash setup/genesis-staged-upgrade.sh
 ```
 
 ### C. By hand after the halt
@@ -105,7 +105,7 @@ Before the upgrade height keep a copy of `~/.genesis/config/` and `~/.genesis/da
 The old binary stops processing blocks with:
 
 ```
-ERR UPGRADE "v1.6.2.1" NEEDED at height: 14122000: {"tag":"v1.6.2.1","commit":"<RELEASE_COMMIT>",...}
+ERR UPGRADE "v1.6.2.1" NEEDED at height: 14122000: {"tag":"v1.6.2.1","commit":"3acbcbe36fbe02508ab9e190b9547a603653c1f1",...}
 ERR CONSENSUS FAILURE!!! err="failed to apply block; error UPGRADE \"v1.6.2.1\" NEEDED at height: 14122000: ..."
 ```
 
