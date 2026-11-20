@@ -42,8 +42,8 @@ That digest is the one published in [GenesisL1/genesisl1-untouched-airdrop](http
 
 ```bash
 # On a copy (a minute of downtime): stop, copy, restart
-sudo systemctl stop genesisd && cp -a ~/.genesis /data/genesis-copy && sudo systemctl start genesisd
-./build/genesisd airdrop-recovery simulate --home /data/genesis-copy --accounts-out accounts.csv > report.json
+sudo systemctl stop genesisd && cp -a ~/.genesis ~/genesis-copy && sudo systemctl start genesisd
+./build/genesisd airdrop-recovery simulate --home ~/genesis-copy --accounts-out accounts.csv > report.json
 cat report.json
 ```
 
