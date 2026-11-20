@@ -1,5 +1,13 @@
 # Changelog
 
+## UNRELEASED (GenesisL1)
+
+* `genesisd` can only be built with Go 1.24 through 1.26 (reference: Go 1.24.13). The app and the binary depend on
+  `gotoolchain.Release`, which only `app/gotoolchain/versiongo_1.{24,25,26}.go` declare. Other toolchains fail to
+  compile `app/gotoolchain` with a message naming the window and the fix, and a binary built around these checks
+  panics at start-up. `setup/dependencies.sh` installs the Go 1.24 snap, and the CI jobs that used floating or older Go
+  versions are pinned to 1.24.
+
 ## v1.6.2.1 (GenesisL1)
 
 Upgrade plan `v1.6.2.1`, on top of v1.6.2. See [upgrades/v1.6.2.1](upgrades/v1.6.2.1/README.md).

@@ -60,6 +60,17 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install curl tar wget build-essential git make gcc liblz4-tool htop unzip jq ca-certificates rsync lz4 pv -y
 ```
 
+### 🧰 Go toolchain (enforced)
+
+`genesisd` builds only with **Go 1.24, 1.25 or 1.26**. The reference toolchain is **Go 1.24.13**, and `setup/dependencies.sh` installs the Go 1.24 snap. With any other version the build stops in [`app/gotoolchain`](app/gotoolchain/window.go) and the error says why. The allowed releases are the files `app/gotoolchain/versiongo_1.*.go`. The app and the binary depend on the `gotoolchain.Release` constant those files declare, so removing the check breaks the build instead of skipping it. A binary built around these checks refuses to start. If your installed Go is outside the range, let the go command fetch the reference toolchain for this build only:
+
+```bash
+GOTOOLCHAIN=go1.24.13 make install
+```
+
+> [!NOTE]
+> Avoid Go 1.24.0 itself. It cannot link the bundled `bytedance/sonic` ([golang/go#71672](https://github.com/golang/go/issues/71672)), so use 1.24.1 or newer.
+
 ### 💡 Enable Swap (Optional but Recommended)
 
 ```bash

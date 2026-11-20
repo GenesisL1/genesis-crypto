@@ -42,6 +42,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	memiavlstore "github.com/crypto-org-chain/cronos/store"
+	"github.com/crypto-org-chain/cronos/v2/app/gotoolchain"
 	"github.com/crypto-org-chain/cronos/v2/client/docs"
 	"github.com/crypto-org-chain/cronos/v2/x/cronos"
 	cronosclient "github.com/crypto-org-chain/cronos/v2/x/cronos/client"
@@ -181,6 +182,10 @@ const (
 	FlagDisableTxReplacement       = "cronos.disable-tx-replacement"
 	FlagDisableOptimisticExecution = "cronos.disable-optimistic-execution"
 )
+
+// The app compiles only with Go 1.24–1.26: gotoolchain.Release is declared
+// only for those releases (see app/gotoolchain).
+const _ = gotoolchain.Release
 
 var Forks = []Fork{}
 
