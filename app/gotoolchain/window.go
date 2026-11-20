@@ -38,9 +38,12 @@
 //
 // Start-up. init checks runtime.Version, the version string the linker
 // records in the binary, against MinMinor and MaxMinor, and panics outside
-// the window. This catches the one bypass the first two layers share: adding
-// a release tag the toolchain does not have, as in "go build -tags go1.24" on
-// Go 1.23.
+// the window. Forging a release tag does not get this far: "go build -tags
+// go1.24" on Go 1.23 selects versiongo_1.24.go, whose //go:build line makes it
+// a Go 1.24 file, and since Go 1.23 the compiler refuses files newer than
+// itself ("file requires newer Go version go1.24"). This layer is the last net
+// for guard files that were edited, and for compilers that set release tags
+// differently.
 //
 // # What this package does not do
 //
