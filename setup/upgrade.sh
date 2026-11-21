@@ -64,8 +64,10 @@ if grep -qE '^[[:space:]]*blocked-addresses[[:space:]]*=' "$CONFIG_DIR/app.toml"
 fi
 
 # Install binaries. Build exactly from the release's go.mod and go.sum (make
-# uses -mod=readonly): every validator must run the same code.
-make install && {
+# uses -mod=readonly): every validator must run the same code. make stops on Go
+# 1.26 or later, and genesisd refuses to run if it was built with other Unicode
+# tables than the network's (Makefile check-go-version, app/toolchain_guard.go).
+make install && "${GOBIN:-$(go env GOPATH)/bin}/$BINARY_NAME" version --long | grep -E '^(version|commit|go):' && {
     echo ""
     echo "Upgrade was a success!"
     echo ""

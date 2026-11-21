@@ -60,6 +60,9 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install curl tar wget build-essential git make gcc liblz4-tool htop unzip jq ca-certificates rsync lz4 pv -y
 ```
 
+> [!IMPORTANT]
+> **Go version:** build genesisd with Go 1.23.12 to 1.25.x (the official binaries use go1.23.12; the setup scripts install Go 1.23). Go 1.26 and later cannot compile this release, and Go 1.27 and later would also make a node compute a different state from the rest of the network (other Unicode tables). `make` stops on them, and `genesisd` refuses to run if it was built with other Unicode tables. If a newer Go is installed, build with `GOTOOLCHAIN=go1.23.12 make install`.
+
 ### 💡 Enable Swap (Optional but Recommended)
 
 ```bash
@@ -202,6 +205,8 @@ genesisd start --log_level warn
 
 <details>
 <summary>⚙️ getting errors with helper script Go Installation (ignore if no error above)</summary>
+
+Any Go from 1.23.12 to 1.25.x works; do not install the latest Go (1.26 or later), which cannot build genesisd.
 
 **For AMD:**
 

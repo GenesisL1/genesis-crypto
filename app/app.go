@@ -350,6 +350,12 @@ func New(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
+	// genesisd checks this before any command; this covers other programs that
+	// embed the app. See CheckToolchain.
+	if err := CheckToolchain(); err != nil {
+		panic(err)
+	}
+
 	encodingConfig := evmenc.MakeConfig()
 	appCodec := encodingConfig.Codec
 	cdc := encodingConfig.Amino

@@ -12,6 +12,12 @@ Upgrade plan `v1.6.2.1`, on top of v1.6.2. See [upgrades/v1.6.2.1](upgrades/v1.6
 * The upgrade keeps the default store loader (`MaxVersionStoreLoader`), which nodes running versiondb rely on.
 * Setup: `setup/lift-airdrop-block.sh` removes the temporary `blocked-addresses` list from `app.toml`;
   `setup/genesis-staged-upgrade.sh` and `setup/upgrade.sh` target v1.6.2.1 and lift the list after the halt.
+* Go guard: genesisd refuses to run if it was built with Unicode tables other than 15.0.0 (Go 1.21 to 1.26) or with
+  `GOEXPERIMENT=jsonv2`, and `make build`, `make install` and `make test` stop on Go 1.26 or later, which cannot compile
+  this release (bytedance/sonic v1.14.0). Go 1.27's Unicode 17.0.0 tables change values the state machine stores, such
+  as the symbol ibc-go saves for each new IBC token, so nodes built on both sides could be split by a single
+  transaction; Go 1.27 also switches `encoding/json` to its v2 implementation. Build with Go 1.23.12 to 1.25.x; the
+  release binaries use go1.23.12. No state-machine change.
 
 ## UNRELEASED
 

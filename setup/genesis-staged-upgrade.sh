@@ -218,8 +218,14 @@ Set EXPECTED_COMMIT='' only if you intentionally want to disable this check."
 
   [[ -x "$STAGED_BIN" ]] || die "Staged binary was not created: $STAGED_BIN"
 
+  # genesisd refuses to run if it was built with other Unicode tables than the
+  # network's (app/toolchain_guard.go). Stop now, long before the halt, instead
+  # of installing a binary that will not start.
+  "$STAGED_BIN" version --long >/dev/null \
+    || die "The staged binary refuses to run (message above). Rebuild with Go 1.23.12 to 1.25.x, for example by running this script with GOTOOLCHAIN=go1.23.12."
+
   log "Staged binary built successfully:"
-  "$STAGED_BIN" version || true
+  "$STAGED_BIN" version --long | grep -E '^(version|commit|go):' || true
 }
 
 wait_for_upgrade_halt() {

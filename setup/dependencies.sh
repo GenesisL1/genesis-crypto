@@ -22,6 +22,9 @@ add_line_to_file() {
 # System update and installation of dependencies
 sudo apt-get update -y
 sudo apt-get install jq git wget make gcc build-essential snapd -y
+# Go 1.23, the release binaries' toolchain. Do not move to latest/stable: Go
+# 1.26 and later cannot build genesisd, and Go 1.27 and later have different
+# Unicode tables (Makefile check-go-version, app/toolchain_guard.go).
 snap install go --channel=1.23/stable --classic
 snap refresh go --channel=1.23/stable --classic
 
