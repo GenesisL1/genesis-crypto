@@ -2,7 +2,7 @@
 
 This software upgrade carries out signal proposal #{{SIGNAL_ID}}. At block {{HEIGHT}}, upgrade v1.6.2.1 returns the untouched L1 coins (L1) of the 2022 ATOM and Evmos airdrops to the community pool: allocations that have never been claimed or used in about 4.5 years.
 
-The release also adds a safeguard that makes validators build with a supported Go version, to prevent a possible chain split (see "Go toolchain guard" below). It changes no consensus logic.
+The release also adds a safeguard that makes validators build with a supported Go version, to prevent a possible chain split (see "Go toolchain guard" below).
 
 A dry run of the upgrade code on mainnet state at block {{DRYRUN_HEIGHT}} moves {{DRYRUN_L1}} L1 from {{DRYRUN_ACCOUNTS}} accounts. The final figures are set at block {{HEIGHT}} and published in the upgrade's airdrop_recovery event.
 
@@ -28,7 +28,7 @@ A security advisory sent to Cosmos chains in November 2026 showed that validator
 - `make build`, `make install` and `make test` stop early on an unsupported Go version, and the upgrade scripts stop if the binary they built refuses to run.
 - Validators must build with Go 1.23.12 to 1.25.x. The release binaries use go1.23.12.
 
-The guard adds no consensus logic and does not change the state machine. Analysis and test evidence: https://github.com/GenesisL1/genesis-crypto/blob/{{TAG}}/upgrades/v1.6.2.1/REVIEW.md
+The guard itself adds no consensus logic and does not change how transactions are processed. The only state change in this upgrade is the airdrop return above. Analysis and test evidence: https://github.com/GenesisL1/genesis-crypto/blob/{{TAG}}/upgrades/v1.6.2.1/REVIEW.md
 
 ## Code and verification
 
