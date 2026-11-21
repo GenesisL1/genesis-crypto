@@ -18,7 +18,7 @@ import sys
 PLAN_NAME = "v1.6.2.1"
 GOV_AUTHORITY = "genesis10d07y265gmmuvt4z0w9aw880jnsr700jyt8njx"   # gov module account on genesis_29-2
 DEFAULT_DEPOSIT = "10000000000000000000000el1"                       # 10,000 L1, as recent proposals
-DEFAULT_TITLE = "Software Upgrade v1.6.2.1: Return Untouched ATOM & Evmos Airdrop L1 to the Community Pool"
+DEFAULT_TITLE = "Software Upgrade v1.6.2.1: Return Untouched ATOM & Evmos Airdrop L1 to the Community Pool, and Go Toolchain Guard"
 MAX_SUMMARY = 40 * 255   # this chain's gov keeper: 40 x MaxMetadataLen (255) bytes
 MAX_METADATA = 255
 MAX_TITLE = 140
@@ -41,6 +41,8 @@ def main():
     ap.add_argument("--deposit", default=DEFAULT_DEPOSIT, help=f"initial deposit (default {DEFAULT_DEPOSIT})")
     ap.add_argument("--title", default=DEFAULT_TITLE)
     ap.add_argument("--metadata", default="", help=f"optional link, at most {MAX_METADATA} bytes")
+    ap.add_argument("--guide", default=None,
+                    help="URL of the validator guide for plan info (default: the guide at the release tag on GitHub)")
     ap.add_argument("--out", default="proposal.json")
     a = ap.parse_args()
 
@@ -59,6 +61,8 @@ def main():
         errors.append(f"--title is {len(a.title)} characters; at most {MAX_TITLE}")
     if len(a.metadata.encode()) > MAX_METADATA:
         errors.append(f"--metadata is {len(a.metadata.encode())} bytes; at most {MAX_METADATA}")
+    if a.guide is not None and not a.guide.startswith("https://"):
+        errors.append("--guide must be an https URL")
     for platform, url, sha in a.binary or []:
         if not re.fullmatch(r"[a-z0-9]+/[a-z0-9]+", platform):
             errors.append(f"--binary platform {platform!r} should look like linux/amd64")
@@ -94,8 +98,11 @@ def main():
     if size > MAX_SUMMARY:
         sys.exit(f"summary is {size} bytes; the chain accepts at most {MAX_SUMMARY}")
 
-    info = {"tag": a.tag, "commit": a.commit,
-            "guide": f"{REPO}/blob/{a.tag}/upgrades/{PLAN_NAME}/VALIDATOR_GUIDE.md"}
+    info = {
+        "tag": a.tag,
+        "commit": a.commit,
+        "guide": a.guide or f"{REPO}/blob/{a.tag}/upgrades/{PLAN_NAME}/VALIDATOR_GUIDE.md",
+    }
     if a.binary:
         info["binaries"] = {p: f"{u}?checksum=sha256:{s}" for p, u, s in a.binary}
 
